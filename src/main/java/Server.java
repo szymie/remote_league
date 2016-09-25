@@ -4,7 +4,7 @@ public class Server {
 
     public static void main(String[] args) {
 
-        System.setProperty("java.security.policy", "file:////home/szymie/IdeaProjects/remote_library/src/main/java/.policy");
+        System.setProperty("java.security.policy", "file:////home/szymie/IdeaProjects/remote_league/src/main/java/.policy");
 
         if(System.getSecurityManager() == null) {
             System.setSecurityManager(new SecurityManager());

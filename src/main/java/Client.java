@@ -12,7 +12,7 @@ public class Client {
 
     public static void main(String args[]) {
 
-        System.setProperty("java.security.policy", "file:////home/szymie/IdeaProjects/remote_library/src/main/java/.policy");
+        System.setProperty("java.security.policy", "file:////home/szymie/IdeaProjects/remote_league/src/main/java/.policy");
 
         if (System.getSecurityManager() == null){
             System.setSecurityManager(new RMISecurityManager());
@@ -54,6 +54,10 @@ public class Client {
             remoteLeague.addClubToCurrentSeason(chelsea);
             remoteLeague.addClubToCurrentSeason(arsenal);
 
+            remoteLeague.startCurrentSeason();
+
+            remoteLeague.closeCurrentSeason();
+
             remoteLeague.addFixtureToCurrentSeason(new Fixture(chelsea.getId(), arsenal.getId(), 1, 0, 1));
             remoteLeague.addFixtureToCurrentSeason(new Fixture(arsenal.getId(), chelsea.getId(), 0, 3, 2));
 
@@ -64,7 +68,6 @@ public class Client {
             Table table = remoteLeague.calculateTableForSeason(season.getId());
 
             System.out.println(table);
-
         } catch (Exception e) {
             e.printStackTrace();
         }

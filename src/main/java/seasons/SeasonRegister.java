@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 public class SeasonRegister {
 
     private Map<Integer, Season> seasons = new HashMap<>();
-    private Queue<Season> seasonQueue = new LinkedBlockingQueue<>();
+    private Queue<Season> seasonsQueue = new LinkedBlockingQueue<>();
     private Map<Integer, Set<Integer>> seasonClubs = new HashMap<>();
     private Map<Integer, List<Fixture>> seasonFixtures = new HashMap<>();
 
@@ -26,18 +26,18 @@ public class SeasonRegister {
 
     public Season addSeason(Season season) throws SeasonNotCompletedException {
 
-        if(!isAddNewSeasonPossible()) {
+        if (!isAddNewSeasonPossible()) {
             throw new SeasonNotCompletedException();
         }
 
-        season.setState(Season.State.IN_PROGRESS);
+        season.setState(Season.State.CREATED);
 
         Season newSeason = new Season(season);
 
         newSeason.setId(Season.nextId++);
         seasons.put(newSeason.getId(), newSeason);
 
-        seasonQueue.offer(newSeason);
+        seasonsQueue.offer(newSeason);
 
         seasonClubs.put(newSeason.getId(), new LinkedHashSet<>());
 
@@ -47,7 +47,7 @@ public class SeasonRegister {
     }
 
     private boolean isAddNewSeasonPossible() {
-        Season lastSeason = seasonQueue.peek();
+        Season lastSeason = seasonsQueue.peek();
         return lastSeason == null || lastSeason.getState() == Season.State.COMPLETED;
     }
 
@@ -55,11 +55,11 @@ public class SeasonRegister {
         return Optional.ofNullable(seasons.get(seasonId));
     }
 
-    public void addClubToCurrentSeason(Club club) throws ClubNotFoundException, SeasonNotFoundException {
+    public void addClubToCurrentSeason(Club club) throws ClubNotFoundException, SeasonNotFoundException, SeasonAlreadyStartedException {
 
         clubsRegister.get(club.getId()).orElseThrow(ClubNotFoundException::new);
 
-        Season lastSeason = checkIfInProgressSeasonExists();
+        Season lastSeason = checkIfCreatedSeasonExists();
 
         Set<Integer> currentSeasonClubs = seasonClubs.get(lastSeason.getId());
 
@@ -68,14 +68,16 @@ public class SeasonRegister {
         seasonClubs.put(lastSeason.getId(), currentSeasonClubs);
     }
 
-    private Season checkIfInProgressSeasonExists() throws SeasonNotFoundException {
+    private Season checkIfCreatedSeasonExists() throws SeasonNotFoundException, SeasonAlreadyStartedException {
 
-        Season lastSeason = seasonQueue.peek();
+        Season lastSeason = seasonsQueue.peek();
 
-        if(lastSeason == null || lastSeason.getState() == Season.State.COMPLETED) {
+        if (lastSeason != null && lastSeason.getState() == Season.State.CREATED) {
+            return lastSeason;
+        } else if (lastSeason == null || lastSeason.getState() == Season.State.COMPLETED) {
             throw new SeasonNotFoundException();
         } else {
-            return lastSeason;
+            throw new SeasonAlreadyStartedException();
         }
     }
 
@@ -100,7 +102,7 @@ public class SeasonRegister {
                                 f.getAwayClubId() == fixture.getAwayClubId())
                 .findFirst();
 
-        if(fixtureOptional.isPresent()) {
+        if (fixtureOptional.isPresent()) {
             throw new FixtureAlreadyPlayedException();
         }
 
@@ -112,8 +114,19 @@ public class SeasonRegister {
         seasonFixtures.put(lastSeason.getId(), fixtures);
     }
 
+    private Season checkIfInProgressSeasonExists() throws SeasonNotFoundException {
+
+        Season lastSeason = seasonsQueue.peek();
+
+        if (lastSeason == null || lastSeason.getState() != Season.State.IN_PROGRESS) {
+            throw new SeasonNotFoundException();
+        } else {
+            return lastSeason;
+        }
+    }
+
     private void checkIfClubAddedToSeason(int clubId, int seasonId, String errorMessage) throws ClubNotFoundException {
-        if(!isClubAddedToSeason(clubId, seasonId)) {
+        if (!isClubAddedToSeason(clubId, seasonId)) {
             throw new ClubNotFoundException(errorMessage);
         }
     }
@@ -130,12 +143,12 @@ public class SeasonRegister {
 
     public void closeCurrentSeason() throws SeasonNotFoundException, FixturesLeftException {
 
-        Season lastSeason = seasonQueue.peek();
+        Season lastSeason = seasonsQueue.peek();
 
-        if(lastSeason == null || lastSeason.getState() == Season.State.COMPLETED) {
+        if (lastSeason == null || lastSeason.getState() == Season.State.COMPLETED) {
             throw new SeasonNotFoundException();
         } else {
-            lastSeason = seasonQueue.poll();
+            lastSeason = seasonsQueue.poll();
         }
 
         int leagueSize = seasonClubs.get(lastSeason.getId()).size();
@@ -143,13 +156,36 @@ public class SeasonRegister {
         int numberOfFixturesToPlay = getFixturesNumberFromLeagueSize(leagueSize);
         int numberOfFixturesPlayed = seasonFixtures.get(lastSeason.getId()).size();
 
-        if(numberOfFixturesPlayed < numberOfFixturesToPlay) {
+        if (numberOfFixturesPlayed < numberOfFixturesToPlay) {
             throw new FixturesLeftException();
         }
 
         lastSeason.setState(Season.State.COMPLETED);
 
-        seasonQueue.offer(lastSeason);
+        seasonsQueue.offer(lastSeason);
+    }
+
+
+    public void startCurrentSeason() throws SeasonNotFoundException, SeasonAlreadyStartedException, NotEnoughClubsException {
+
+        Season lastSeason = seasonsQueue.peek();
+
+        if (lastSeason == null || lastSeason.getState() == Season.State.COMPLETED) {
+            throw new SeasonNotFoundException();
+        } else if(lastSeason.getState() == Season.State.IN_PROGRESS) {
+            throw new SeasonAlreadyStartedException();
+        } else {
+
+            Set<Integer> clubs = seasonClubs.get(lastSeason.getId());
+
+            if(clubs.size() < 2) {
+                throw new NotEnoughClubsException();
+            }
+
+            lastSeason = seasonsQueue.poll();
+            lastSeason.setState(Season.State.IN_PROGRESS);
+            seasonsQueue.offer(lastSeason);
+        }
     }
 
     private int getFixturesNumberFromLeagueSize(int leagueSize) {
@@ -160,7 +196,7 @@ public class SeasonRegister {
 
         Set<Integer> clubs = seasonClubs.get(seasonId);
 
-        if(clubs == null) {
+        if (clubs == null) {
             throw new SeasonNotFoundException();
         }
 

@@ -12,6 +12,7 @@ public class Season implements Remote, Serializable {
     private State state;
 
     public enum State {
+        CREATED,
         IN_PROGRESS,
         COMPLETED
     }

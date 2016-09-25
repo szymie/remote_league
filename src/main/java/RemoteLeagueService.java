@@ -4,10 +4,7 @@ import fixtures.FixtureAlreadyPlayedException;
 import fixtures.FixturesLeftException;
 import players.*;
 import players.Player.Position;
-import seasons.Season;
-import seasons.SeasonNotCompletedException;
-import seasons.SeasonNotFoundException;
-import seasons.SeasonRegister;
+import seasons.*;
 import table.Table;
 import table.TableRegister;
 
@@ -82,7 +79,7 @@ public class RemoteLeagueService extends UnicastRemoteObject implements RemoteLe
     }
 
     @Override
-    public void addClubToCurrentSeason(Club club) throws RemoteException, ClubNotFoundException, SeasonNotFoundException {
+    public void addClubToCurrentSeason(Club club) throws RemoteException, ClubNotFoundException, SeasonNotFoundException, SeasonAlreadyStartedException {
         seasonRegister.addClubToCurrentSeason(club);
     }
 
@@ -99,6 +96,11 @@ public class RemoteLeagueService extends UnicastRemoteObject implements RemoteLe
     @Override
     public void closeCurrentSeason() throws RemoteException, SeasonNotFoundException, FixturesLeftException {
         seasonRegister.closeCurrentSeason();
+    }
+
+    @Override
+    public void startCurrentSeason() throws RemoteException, SeasonNotFoundException, SeasonAlreadyStartedException, NotEnoughClubsException {
+        seasonRegister.startCurrentSeason();
     }
 
     @Override

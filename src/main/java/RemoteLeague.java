@@ -12,9 +12,7 @@ import java.util.Optional;
 import players.Player.Position;
 import players.PlayerAlreadyBoundException;
 import players.PlayerNotFoundException;
-import seasons.Season;
-import seasons.SeasonNotCompletedException;
-import seasons.SeasonNotFoundException;
+import seasons.*;
 import table.Table;
 
 public interface RemoteLeague extends Remote {
@@ -38,7 +36,7 @@ public interface RemoteLeague extends Remote {
     public Season createSeason(Season season) throws RemoteException, SeasonNotCompletedException;
 
     public void addClubToCurrentSeason(Club club) throws RemoteException,
-            ClubNotFoundException, SeasonNotFoundException;
+            ClubNotFoundException, SeasonNotFoundException, SeasonAlreadyStartedException;
 
     public void addFixtureToCurrentSeason(Fixture fixture) throws RemoteException, ClubNotFoundException, SeasonNotFoundException, FixtureAlreadyPlayedException;
 
@@ -46,7 +44,7 @@ public interface RemoteLeague extends Remote {
 
     public void closeCurrentSeason() throws RemoteException, SeasonNotFoundException, FixturesLeftException;
 
-    public Table calculateTableForSeason(int seasonId) throws RemoteException, SeasonNotFoundException;
+    public void startCurrentSeason() throws RemoteException, SeasonNotFoundException, SeasonAlreadyStartedException, NotEnoughClubsException;
 
-    //pobranie zwycięzcy dla danego sezonu
+    public Table calculateTableForSeason(int seasonId) throws RemoteException, SeasonNotFoundException;
 }
